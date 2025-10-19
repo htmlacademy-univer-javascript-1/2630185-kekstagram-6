@@ -1,3 +1,2 @@
-import { photos } from './data.js';
-
-export{photos};
+import './data.js';
+import './util.js';
