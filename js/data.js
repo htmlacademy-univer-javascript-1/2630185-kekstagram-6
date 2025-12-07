@@ -27,7 +27,10 @@ const createComment = () => ({
 
 const createPhoto = () => {
   const id = generatePhotoId();
-  const comments = Array.from({ length: getRandomInteger(0, 30) }, createComment);
+  const comments = Array.from(
+    { length: getRandomInteger(0, 30) },
+    createComment
+  );
 
   return {
     id,
@@ -38,6 +41,23 @@ const createPhoto = () => {
   };
 };
 
-const photos = Array.from({ length: 25 }, createPhoto);
+const generatePhotos = () => Array.from({ length: 25 }, createPhoto);
 
-export { photos };
+const renderThumbnails = (photos) => {
+  const container = document.querySelector('.pictures');
+
+  const template = document
+    .querySelector('#picture')
+    .content
+    .querySelector('.picture');
+
+  photos.forEach((photo) => {
+    const element = template.cloneNode(true);
+    element.querySelector('.picture__img').src = photo.url;
+    element.querySelector('.picture__likes').textContent = photo.likes;
+    element.querySelector('.picture__comments').textContent = photo.comments.length;
+    container.appendChild(element);
+  });
+};
+
+export { generatePhotos, renderThumbnails };
