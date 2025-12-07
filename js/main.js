@@ -1,2 +1,4 @@
-import './data.js';
-import './util.js';
+import { generatePhotos, renderThumbnails } from './data.js';
+
+const photos = generatePhotos();
+renderThumbnails(photos);
