@@ -1395,3 +1395,16 @@ main {
 .hidden {
   display: none;
 }
+
+.img-upload__field-wrapper--invalid input,
+.img-upload__field-wrapper--invalid textarea {
+  background-color: #965b5b; /* Розовый фон */
+}
+
+.img-upload__error {
+  display: block;
+  color: #ff4141; /* Красный текст */
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}
