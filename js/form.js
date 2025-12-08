@@ -1,3 +1,6 @@
+import { setDefaultEffect } from './effects.js';
+import { setDefaultScale } from './scale.js';
+
 const MAX_SYMBOLS = 20;
 const MAX_HASHTAGS = 5;
 
@@ -108,9 +111,14 @@ function initForm() {
     if (!fileInput.files[0]) {
       return;
     }
+
     overlay.classList.remove('hidden');
     document.body.classList.add('modal-open');
+
+    setDefaultEffect();
+    setDefaultScale();
   };
+
 
   const closeForm = () => {
     overlay.classList.add('hidden');
