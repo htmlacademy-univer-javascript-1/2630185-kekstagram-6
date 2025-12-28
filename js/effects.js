@@ -1,125 +1,192 @@
-const EFFECT_MAX = 100;
-const EFFECT_STEP = 1;
-const MAX_BLUR = 3;
-const MAX_HEAT = 3;
-const RADIX = 10;
+const MIN_SCALE = 25;
+const MAX_SCALE = 100;
+const STEP_SCALE = 25;
 
-const SLIDER_CONFIG = {
-  MIN: 0,
-  MAX: EFFECT_MAX,
-  STEP: EFFECT_STEP,
-};
+const form = document.querySelector('.img-upload__form');
 
-const uploadForm = document.querySelector('.img-upload__form');
-const effectsList = uploadForm.querySelector('.effects__list');
-const preview = uploadForm.querySelector('.img-upload__preview img');
-const effectLevelBlock = uploadForm.querySelector('.img-upload__effect-level');
-const effectLevelInput = uploadForm.querySelector('.effect-level__value');
-const sliderElement = uploadForm.querySelector('.effect-level__slider');
+const zoomOutBtnElement = form.querySelector('.scale__control--smaller');
+const zoomInBtnElement = form.querySelector('.scale__control--bigger');
+const scaleValueElement = form.querySelector('.scale__control--value');
 
-const baseClass = preview.classList[0];
-let currentEffectClass = null;
+const imageElement = form.querySelector('.img-upload__preview img');
 
-noUiSlider.create(sliderElement, {
-  range: {
-    min: SLIDER_CONFIG.MIN,
-    max: SLIDER_CONFIG.MAX,
+const effectsListElement = form.querySelector('.effects__list');
+const sliderContainer = form.querySelector('.img-upload__effect-level');
+const sliderElement = form.querySelector('.effect-level__slider');
+const effectValueElement = form.querySelector('.effect-level__value');
+
+const Effects = {
+  none: {
+    range: { min: 0, max: 1 },
+    start: 1,
+    step: 0.1,
   },
-  start: SLIDER_CONFIG.MAX,
-  step: SLIDER_CONFIG.STEP,
-  connect: 'lower',
-});
-
-const hideSlider = () => {
-  effectLevelBlock.classList.add('visually-hidden');
-};
-
-const showSlider = () => {
-  effectLevelBlock.classList.remove('visually-hidden');
-};
-
-const EFFECTS_MAP = {
-  'effects__preview--none': () => {
-    hideSlider();
-    return 'none';
+  chrome: {
+    range: { min: 0, max: 1 },
+    start: 1,
+    step: 0.1,
   },
-  'effects__preview--chrome': () => {
-    showSlider();
-    const value = parseInt(effectLevelInput.value, RADIX) / EFFECT_MAX;
-    return `grayscale(${value})`;
+  sepia: {
+    range: { min: 0, max: 1 },
+    start: 1,
+    step: 0.1,
   },
-  'effects__preview--sepia': () => {
-    showSlider();
-    const value = parseInt(effectLevelInput.value, RADIX) / EFFECT_MAX;
-    return `sepia(${value})`;
+  marvin: {
+    range: { min: 0, max: 100 },
+    start: 100,
+    step: 1,
   },
-  'effects__preview--marvin': () => {
-    showSlider();
-    const value = parseInt(effectLevelInput.value, RADIX);
-    return `invert(${value}%)`;
+  phobos: {
+    range: { min: 0, max: 3 },
+    start: 3,
+    step: 0.1,
   },
-  'effects__preview--phobos': () => {
-    showSlider();
-    const value = parseInt(effectLevelInput.value, RADIX) * (MAX_BLUR / EFFECT_MAX);
-    return `blur(${value}px)`;
-  },
-  'effects__preview--heat': () => {
-    showSlider();
-    const min = SLIDER_CONFIG.MAX / MAX_HEAT;
-    const value = min + parseInt(effectLevelInput.value, RADIX) * ((MAX_HEAT - 1) / EFFECT_MAX);
-    return `brightness(${value})`;
+  heat: {
+    range: { min: 1, max: 3 },
+    start: 3,
+    step: 0.1,
   },
 };
 
-const applyEffect = (effectClass) => {
-  const effectFn = EFFECTS_MAP[effectClass];
-  if (!effectFn) {
-    preview.style.filter = 'none';
+let currentEffect = 'none';
+
+function applyScale(value) {
+  const scale = value / 100;
+  imageElement.style.transform = `scale(${scale})`;
+}
+
+function onZoomOut() {
+  let value = parseInt(scaleValueElement.value, 10);
+  if (value > MIN_SCALE) {
+    value -= STEP_SCALE;
+    scaleValueElement.value = `${value}%`;
+    applyScale(value);
+  }
+}
+
+function onZoomIn() {
+  let value = parseInt(scaleValueElement.value, 10);
+  if (value < MAX_SCALE) {
+    value += STEP_SCALE;
+    scaleValueElement.value = `${value}%`;
+    applyScale(value);
+  }
+}
+
+function initScale() {
+  scaleValueElement.value = '100%';
+  applyScale(100);
+  zoomOutBtnElement.addEventListener('click', onZoomOut);
+  zoomInBtnElement.addEventListener('click', onZoomIn);
+}
+
+function getFilterValue(effect, sliderValue) {
+  switch (effect) {
+    case 'chrome': return `grayscale(${sliderValue})`;
+    case 'sepia': return `sepia(${sliderValue})`;
+    case 'marvin': return `invert(${sliderValue}%)`;
+    case 'phobos': return `blur(${sliderValue}px)`;
+    case 'heat': return `brightness(${sliderValue})`;
+    default: return '';
+  }
+}
+
+function applyEffect(effectName) {
+  currentEffect = effectName;
+  const config = Effects[effectName];
+
+  if (effectName === 'none') {
+    sliderContainer.classList.add('hidden');
+    imageElement.style.filter = '';
+    effectValueElement.value = Effects.none.start;
+
+    sliderElement.noUiSlider.updateOptions({
+      range: Effects.none.range,
+      start: Effects.none.start,
+      step: Effects.none.step,
+    });
+
+    sliderElement.noUiSlider.set(Effects.none.start);
     return;
   }
-  preview.style.filter = effectFn();
-};
 
-const setDefaultEffect = () => {
-  hideSlider();
-  preview.className = baseClass;
-  preview.style.filter = 'none';
-  sliderElement.noUiSlider.set(SLIDER_CONFIG.MAX);
-  effectLevelInput.value = SLIDER_CONFIG.MAX;
-};
+  sliderContainer.classList.remove('hidden');
 
-const onEffectsClick = (evt) => {
-  let target = evt.target;
+  sliderElement.noUiSlider.updateOptions({
+    range: config.range,
+    start: config.start,
+    step: config.step
+  });
 
-  if (target.classList.contains('effects__label')) {
-    target = target.querySelector('span');
-  }
+  sliderElement.noUiSlider.set(config.start);
 
-  if (!target || !target.classList.contains('effects__preview')) {
-    return;
-  }
+  effectValueElement.value = config.start;
+  imageElement.style.filter = getFilterValue(effectName, config.start);
+}
 
-  if (currentEffectClass) {
-    preview.classList.remove(currentEffectClass);
-  }
+function onEffectChange(evt) {
+  const input = evt.target.closest('input[type="radio"]');
+  if (!input) { return; }
+  applyEffect(input.value);
+}
 
-  currentEffectClass = target.classList[1];
-  preview.classList.add(currentEffectClass);
+function initEffects() {
+  noUiSlider.create(sliderElement, {
+    range: Effects.none.range,
+    start: Effects.none.start,
+    step: Effects.none.step,
+    connect: 'lower'
+  });
 
-  sliderElement.noUiSlider.set(SLIDER_CONFIG.MAX);
-  effectLevelInput.value = SLIDER_CONFIG.MAX;
+  effectValueElement.value = Effects.none.start;
+  sliderContainer.classList.add('hidden');
 
-  applyEffect(currentEffectClass);
-};
+  sliderElement.noUiSlider.on('update', (_, __, value) => {
+    effectValueElement.value = value;
+    imageElement.style.filter = getFilterValue(currentEffect, value);
+  });
 
-const onSliderUpdate = () => {
-  effectLevelInput.value = Math.round(sliderElement.noUiSlider.get());
-  if (currentEffectClass) {
-    applyEffect(currentEffectClass);
-  }
-};
+  effectsListElement.addEventListener('change', onEffectChange);
+}
 
-sliderElement.noUiSlider.on('update', onSliderUpdate);
-effectsList.addEventListener('click', onEffectsClick);
+function initImageEditor() {
+  initScale();
+  initEffects();
 
-export { setDefaultEffect };
+  const overlay = form.querySelector('.img-upload__overlay');
+  const uploadInput = form.querySelector('#upload-file');
+  const cancelButton = form.querySelector('#upload-cancel');
+
+  uploadInput.addEventListener('change', () => {
+    overlay.classList.remove('hidden');
+    resetImageEditor();
+  });
+
+  cancelButton.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    resetImageEditor();
+  });
+}
+
+function resetImageEditor() {
+  scaleValueElement.value = '100%';
+  applyScale(100);
+
+  const noneRadio = form.querySelector('#effect-none');
+  if (noneRadio) {noneRadio.checked = true;}
+
+  currentEffect = 'none';
+  imageElement.style.filter = '';
+  sliderContainer.classList.add('hidden');
+
+  sliderElement.noUiSlider.updateOptions({
+    range: Effects.none.range,
+    start: Effects.none.start,
+    step: Effects.none.step
+  });
+
+  sliderElement.noUiSlider.set(Effects.none.start);
+  effectValueElement.value = Effects.none.start;
+}
+
+export { initImageEditor };
