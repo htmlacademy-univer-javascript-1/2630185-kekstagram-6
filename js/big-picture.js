@@ -8,11 +8,10 @@ const commentCountBlock = bigPicture.querySelector('.social__comment-count');
 const commentsLoader = bigPicture.querySelector('.comments-loader');
 const closeBtn = bigPicture.querySelector('.big-picture__cancel');
 
-const COMMENTS_STEP = 5;
-
 let onEscKeyDown;
 let photoComments = [];
 let visibleCommentsCount = 0;
+const COMMENTS_STEP = 5;
 
 const createCommentElement = (comment) => {
   const li = document.createElement('li');
@@ -31,7 +30,6 @@ const createCommentElement = (comment) => {
 
   li.appendChild(img);
   li.appendChild(p);
-
   return li;
 };
 
@@ -43,7 +41,6 @@ const renderNextComments = () => {
   commentsToRender.forEach((comment) => {
     fragment.appendChild(createCommentElement(comment));
   });
-
   socialComments.appendChild(fragment);
 
   visibleCommentsCount = next;
@@ -56,18 +53,8 @@ const renderNextComments = () => {
   }
 };
 
-const closeBigPicture = () => {
-  bigPicture.classList.add('hidden');
-  document.body.classList.remove('modal-open');
-
-  document.removeEventListener('keydown', onEscKeyDown);
-  closeBtn.removeEventListener('click', closeBigPicture);
-};
-
 const openBigPicture = (photo) => {
-  if (!photo) {
-    return;
-  }
+  if (!photo) {return;}
 
   bigImg.src = photo.url;
   bigImg.alt = photo.description || '';
@@ -94,9 +81,16 @@ const openBigPicture = (photo) => {
       closeBigPicture();
     }
   };
-
   document.addEventListener('keydown', onEscKeyDown);
   closeBtn.addEventListener('click', closeBigPicture);
 };
+
+function closeBigPicture() {
+  bigPicture.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+
+  document.removeEventListener('keydown', onEscKeyDown);
+  closeBtn.removeEventListener('click', closeBigPicture);
+}
 
 export { openBigPicture, closeBigPicture };

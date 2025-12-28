@@ -1,26 +1,35 @@
+function showMessage(templateId, { onButton, onClose } = {}) {
+  const template = document.querySelector(templateId).content.cloneNode(true);
+  const message = template.querySelector('section');
+  document.body.append(message);
 
-const getRandomInteger = (a, b) => {
-  const lower = Math.ceil(Math.min(a, b));
-  const upper = Math.floor(Math.max(a, b));
-  return Math.floor(Math.random() * (upper - lower + 1) + lower);
-};
-
-const getRandomArrayElement = (elements) =>
-  elements[getRandomInteger(0, elements.length - 1)];
-
-function createRandomIdFromRangeGenerator(min, max) {
-  const previousValues = [];
-  return function () {
-    if (previousValues.length >= (max - min + 1)) {
-      return null;
+  function closeMessage(callback) {
+    message.remove();
+    document.removeEventListener('keydown', onEscKeydown);
+    document.removeEventListener('click', onOutsideClick);
+    if (callback) {
+      callback();
     }
-    let currentValue = getRandomInteger(min, max);
-    while (previousValues.includes(currentValue)) {
-      currentValue = getRandomInteger(min, max);
+  }
+
+  function onEscKeydown(evt) {
+    if (evt.key === 'Escape') {
+      closeMessage(onClose);
     }
-    previousValues.push(currentValue);
-    return currentValue;
-  };
+  }
+
+  function onOutsideClick(evt) {
+    if (!evt.target.closest(`.${message.className}__inner`)) {
+      closeMessage(onClose);
+    }
+  }
+
+  message.querySelector('button').addEventListener('click', () => {
+    closeMessage(onButton);
+  });
+
+  document.addEventListener('keydown', onEscKeydown);
+  document.addEventListener('click', onOutsideClick);
 }
 
-export { getRandomInteger, getRandomArrayElement, createRandomIdFromRangeGenerator };
+export { showMessage };
