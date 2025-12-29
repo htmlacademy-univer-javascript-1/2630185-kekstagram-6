@@ -3,6 +3,7 @@ import { showMessage } from './util.js';
 
 const MAX_SYMBOLS = 20;
 const MAX_HASHTAGS = 5;
+const FILE_TYPES = ['jpg', 'jpeg', 'png', 'gif'];
 
 function initForm() {
   const formUpload = document.querySelector('.img-upload__form');
@@ -12,6 +13,7 @@ function initForm() {
   const inputHashtag = formUpload.querySelector('.text__hashtags');
   const inputComment = formUpload.querySelector('.text__description');
   const submitButton = formUpload.querySelector('.img-upload__submit');
+  const previewImage = formUpload.querySelector('.img-upload__preview img');
 
   const pristine = new Pristine(formUpload, {
     classTo: 'img-upload__field-wrapper',
@@ -21,6 +23,30 @@ function initForm() {
     errorTextTag: 'div',
     errorTextClass: 'img-upload__error'
   });
+
+
+  const loadUserImage = () => {
+    const [file] = fileInput.files;
+
+    if (!file) {
+      return;
+    }
+
+    const fileName = file.name.toLowerCase();
+    const isValidType = FILE_TYPES.some((type) => fileName.endsWith(type));
+
+    if (!isValidType) {
+      fileInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      previewImage.src = reader.result;
+    });
+
+    reader.readAsDataURL(file);
+  };
 
   const validateHashtags = (value) => {
     const inputText = value.trim();
@@ -113,6 +139,7 @@ function initForm() {
     if (!fileInput.files.length) {
       return;
     }
+    loadUserImage();
     overlay.classList.remove('hidden');
     document.body.classList.add('modal-open');
     updateSubmitButton();
@@ -126,6 +153,7 @@ function initForm() {
     pristine.reset();
     fileInput.value = '';
 
+    previewImage.src = 'img/upload-default-image.jpg';
     document.querySelector('.scale__control--value').value = '100%';
     formUpload.querySelector('input[name="effect"][value="none"]').checked = true;
 
