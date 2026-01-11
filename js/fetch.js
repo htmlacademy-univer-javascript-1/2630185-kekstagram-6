@@ -16,10 +16,12 @@ const sendDataToServer = (body) =>
   fetch(Urls.POST, {
     method: 'POST',
     body,
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error('Ошибка отправки формы');
-    }
-  });
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Ошибка отправки формы');
+      }
+      return response.json();
+    });
 
 export { getDataFromServer, sendDataToServer };
