@@ -1,5 +1,5 @@
 import { sendDataToServer } from './fetch.js';
-import { showMessage } from './util.js';
+import { showMessage, isEscapeKey } from './util.js';
 import { resetImageEditor } from './effects.js';
 
 const MAX_SYMBOLS = 20;
@@ -135,7 +135,7 @@ function initForm() {
   };
 
   const onFormKeydown = (evt) => {
-    if (evt.key === 'Escape' && !overlay.classList.contains('hidden')) {
+    if (isEscapeKey(evt) && !overlay.classList.contains('hidden')) {
       if (document.activeElement !== inputHashtag && document.activeElement !== inputComment) {
         closeForm();
       }

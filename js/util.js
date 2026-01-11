@@ -1,3 +1,7 @@
+function isEscapeKey(evt) {
+  return evt.key === 'Escape';
+}
+
 function showMessage(templateId, { onButton, onClose } = {}) {
   const template = document.querySelector(templateId).content.cloneNode(true);
   const message = template.querySelector('section');
@@ -13,7 +17,7 @@ function showMessage(templateId, { onButton, onClose } = {}) {
   }
 
   function onEscKeydown(evt) {
-    if (evt.key === 'Escape') {
+    if (isEscapeKey(evt)) {
       closeMessage(onClose);
     }
   }
@@ -27,7 +31,6 @@ function showMessage(templateId, { onButton, onClose } = {}) {
   message.querySelector('button').addEventListener('click', () => {
     closeMessage(onButton);
   });
-
   document.addEventListener('keydown', onEscKeydown);
   document.addEventListener('click', onOutsideClick);
 }
@@ -47,4 +50,5 @@ const shuffleArray = (array) => {
   }
   return array;
 };
-export { showMessage, shuffleArray, debounce };
+
+export { showMessage, shuffleArray, debounce, isEscapeKey };
