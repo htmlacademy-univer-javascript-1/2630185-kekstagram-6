@@ -1,8 +1,10 @@
 import { sendDataToServer } from './fetch.js';
 import { showMessage } from './util.js';
+import { resetImageEditor } from './effects.js';
 
 const MAX_SYMBOLS = 20;
 const MAX_HASHTAGS = 5;
+const MAX_COMMENT_LENGTH = 140;
 const FILE_TYPES = ['jpg', 'jpeg', 'png', 'gif'];
 
 function initForm() {
@@ -24,27 +26,21 @@ function initForm() {
     errorTextClass: 'img-upload__error'
   });
 
-
   const loadUserImage = () => {
     const [file] = fileInput.files;
-
     if (!file) {
       return;
     }
-
     const fileName = file.name.toLowerCase();
     const isValidType = FILE_TYPES.some((type) => fileName.endsWith(type));
-
     if (!isValidType) {
       fileInput.value = '';
       return;
     }
-
     const reader = new FileReader();
     reader.addEventListener('load', () => {
       previewImage.src = reader.result;
     });
-
     reader.readAsDataURL(file);
   };
 
@@ -53,29 +49,24 @@ function initForm() {
     if (inputText === '') {
       return true;
     }
-
-    const hashtags = inputText.split(/\s+/);
+    const hashtags = inputText.split(/\s+/).filter((tag) => tag.length > 0);
     if (hashtags.length > MAX_HASHTAGS) {
       return false;
     }
-
     const uniqueTags = new Set();
-
     return hashtags.every((hashtag) => {
       if (
-        hashtag[0] !== '#' ||
+        !hashtag.startsWith('#') ||
         hashtag === '#' ||
         hashtag.length > MAX_SYMBOLS ||
         !/^#[a-zа-яё0-9-]{1,19}$/i.test(hashtag)
       ) {
         return false;
       }
-
       const lower = hashtag.toLowerCase();
       if (uniqueTags.has(lower)) {
         return false;
       }
-
       uniqueTags.add(lower);
       return true;
     });
@@ -86,15 +77,12 @@ function initForm() {
     if (inputText === '') {
       return '';
     }
-
-    const hashtags = inputText.split(/\s+/);
-
+    const hashtags = inputText.split(/\s+/).filter((tag) => tag.length > 0);
     if (hashtags.length > MAX_HASHTAGS) {
       return `Нельзя указать больше ${MAX_HASHTAGS} хэш-тегов`;
     }
-
     for (const hashtag of hashtags) {
-      if (hashtag[0] !== '#') {
+      if (!hashtag.startsWith('#')) {
         return 'Хэш-тег должен начинаться с символа #';
       }
       if (hashtag === '#') {
@@ -106,33 +94,23 @@ function initForm() {
       if (!/^#[a-zа-яё0-9-]{1,19}$/i.test(hashtag)) {
         return 'Хэштег содержит недопустимые символы';
       }
-      if (hashtag.includes(' ', 1)) {
-        return 'Хэштеги должны разделяться пробелами';
-      }
     }
-
     const lowerTags = hashtags.map((tag) => tag.toLowerCase());
     if (new Set(lowerTags).size !== lowerTags.length) {
       return 'Хэштеги не должны повторяться';
     }
-
     return '';
   };
 
   pristine.addValidator(inputHashtag, validateHashtags, getHashtagErrorMessage);
   pristine.addValidator(
     inputComment,
-    (value) => value.length <= 140,
-    'Длина комментария не может превышать 140 символов'
+    (value) => value.length <= MAX_COMMENT_LENGTH,
+    `Длина комментария не может превышать ${MAX_COMMENT_LENGTH} символов`
   );
 
   const updateSubmitButton = () => {
     submitButton.disabled = !pristine.validate();
-  };
-
-  const hideForm = () => {
-    overlay.classList.add('hidden');
-    document.body.classList.remove('modal-open');
   };
 
   const openForm = () => {
@@ -148,26 +126,25 @@ function initForm() {
   const closeForm = () => {
     overlay.classList.add('hidden');
     document.body.classList.remove('modal-open');
-
     formUpload.reset();
     pristine.reset();
     fileInput.value = '';
-
     previewImage.src = 'img/upload-default-image.jpg';
-    document.querySelector('.scale__control--value').value = '100%';
-    formUpload.querySelector('input[name="effect"][value="none"]').checked = true;
-
+    resetImageEditor();
     submitButton.disabled = false;
+  };
+
+  const onFormKeydown = (evt) => {
+    if (evt.key === 'Escape' && !overlay.classList.contains('hidden')) {
+      if (document.activeElement !== inputHashtag && document.activeElement !== inputComment) {
+        closeForm();
+      }
+    }
   };
 
   fileInput.addEventListener('change', openForm);
   cancelButton.addEventListener('click', closeForm);
-
-  document.addEventListener('keydown', (evt) => {
-    if (evt.key === 'Escape' && !overlay.classList.contains('hidden')) {
-      closeForm();
-    }
-  });
+  document.addEventListener('keydown', onFormKeydown);
 
   [inputHashtag, inputComment].forEach((field) => {
     field.addEventListener('keydown', (evt) => {
@@ -175,19 +152,15 @@ function initForm() {
         evt.stopPropagation();
       }
     });
-
     field.addEventListener('input', updateSubmitButton);
   });
 
   formUpload.addEventListener('submit', (evt) => {
     evt.preventDefault();
-
     if (!pristine.validate()) {
       return;
     }
-
     submitButton.disabled = true;
-
     sendDataToServer(new FormData(formUpload))
       .then(() => {
         closeForm();
@@ -195,17 +168,14 @@ function initForm() {
       })
       .catch(() => {
         submitButton.disabled = false;
-
-        hideForm();
-
         showMessage('#error', {
           onButton: () => {
             overlay.classList.remove('hidden');
             document.body.classList.add('modal-open');
           },
-
           onClose: () => {
-            closeForm();
+            overlay.classList.remove('hidden');
+            document.body.classList.add('modal-open');
           }
         });
       });
