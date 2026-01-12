@@ -8,12 +8,12 @@ const imgFilters = document.querySelector('.img-filters');
 const imgFiltersForm = imgFilters.querySelector('.img-filters__form');
 
 let photosData = [];
-let renderPhotos;
+let renderPhotos = null;
 
-const normalizePhotos = (photos) => (Array.isArray(photos) ? photos : []);
+const normalizePhotos = (photos) => (Array.isArray(photos) ? [...photos] : []);
 
 const availableFilters = {
-  'filter-default': (photos) => [...normalizePhotos(photos)],
+  'filter-default': (photos) => normalizePhotos(photos),
 
   'filter-random': (photos) => {
     const list = normalizePhotos(photos);
@@ -22,31 +22,11 @@ const availableFilters = {
 
   'filter-discussed': (photos) => {
     const list = normalizePhotos(photos);
-    return [...list].sort(
-      (first, second) => second.comments.length - first.comments.length
-    );
+    return [...list].sort((a, b) => b.comments.length - a.comments.length);
   },
 };
 
 const isButton = (evt) => evt.target.tagName === 'BUTTON';
-
-const onImgFiltersFormClick = debounce((evt) => {
-  if (!isButton(evt) || typeof renderPhotos !== 'function') {
-    return;
-  }
-
-  const filterFunction = availableFilters[evt.target.id];
-  if (typeof filterFunction !== 'function') {
-    return;
-  }
-
-  removePictures();
-  const filteredPhotos = filterFunction(photosData);
-
-  if (filteredPhotos.length) {
-    renderPhotos(filteredPhotos);
-  }
-});
 
 const onButtonClick = (evt) => {
   if (!isButton(evt)) {
@@ -61,14 +41,23 @@ const onButtonClick = (evt) => {
   evt.target.classList.add(ACTIVE_CLASS);
 };
 
-const initFilters = (photos, renderFunction) => {
-  if (Array.isArray(photos)) {
-    photosData = [...photos];
+const onImgFiltersFormClick = debounce((evt) => {
+  if (!isButton(evt) || typeof renderPhotos !== 'function') {
+    return;
   }
 
-  if (typeof renderFunction === 'function') {
-    renderPhotos = renderFunction;
+  const filterFunction = availableFilters[evt.target.id];
+  if (typeof filterFunction !== 'function') {
+    return;
   }
+
+  removePictures();
+  renderPhotos(filterFunction(photosData));
+});
+
+const initFilters = (photos, renderFunction) => {
+  photosData = normalizePhotos(photos);
+  renderPhotos = renderFunction;
 
   imgFilters.classList.remove('img-filters--inactive');
 

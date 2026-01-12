@@ -15,7 +15,6 @@ const createThumbnail = (photoData) => {
   image.alt = photoData.description;
   likes.textContent = photoData.likes;
   comments.textContent = photoData.comments.length;
-
   thumbnail.dataset.photoId = photoData.id;
 
   return thumbnail;
@@ -23,12 +22,10 @@ const createThumbnail = (photoData) => {
 
 const renderThumbnails = (photosData) => {
   const fragment = document.createDocumentFragment();
-
   photosData.forEach((photo) => {
     const thumbnail = createThumbnail(photo);
     fragment.appendChild(thumbnail);
   });
-
   picturesContainer.appendChild(fragment);
 };
 
