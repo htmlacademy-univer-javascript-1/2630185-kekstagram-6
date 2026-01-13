@@ -12,10 +12,13 @@ function initForm() {
   const fileInput = formUpload.querySelector('.img-upload__input');
   const overlay = document.querySelector('.img-upload__overlay');
   const cancelButton = overlay.querySelector('#upload-cancel');
+
   const inputHashtag = formUpload.querySelector('.text__hashtags');
   const inputComment = formUpload.querySelector('.text__description');
+
   const submitButton = formUpload.querySelector('.img-upload__submit');
   const previewImage = formUpload.querySelector('.img-upload__preview img');
+  const effectsPreviews = formUpload.querySelectorAll('.effects__preview');
 
   const pristine = new Pristine(formUpload, {
     classTo: 'img-upload__field-wrapper',
@@ -23,64 +26,90 @@ function initForm() {
     successClass: 'img-upload__field-wrapper--valid',
     errorTextParent: 'img-upload__field-wrapper',
     errorTextTag: 'div',
-    errorTextClass: 'img-upload__error'
+    errorTextClass: 'img-upload__error',
   });
+
+  const isMessageOpened = () => Boolean(document.querySelector('.success, .error'));
+
+  const getHashtags = (value) =>
+    value
+      .trim()
+      .split(/\s+/)
+      .filter((tag) => tag.length > 0);
+
+  const isValidFileType = (file) => {
+    const fileName = file.name.toLowerCase();
+    return FILE_TYPES.some((type) => fileName.endsWith(type));
+  };
+
+  const setPreviewImage = (src) => {
+    previewImage.src = src;
+    effectsPreviews.forEach((preview) => {
+      preview.style.backgroundImage = `url(${src})`;
+    });
+  };
 
   const loadUserImage = () => {
     const [file] = fileInput.files;
     if (!file) {
       return;
     }
-    const fileName = file.name.toLowerCase();
-    const isValidType = FILE_TYPES.some((type) => fileName.endsWith(type));
-    if (!isValidType) {
+
+    if (!isValidFileType(file)) {
       fileInput.value = '';
       return;
     }
+
     const reader = new FileReader();
     reader.addEventListener('load', () => {
-      previewImage.src = reader.result;
+      setPreviewImage(reader.result);
     });
+
     reader.readAsDataURL(file);
   };
 
   const validateHashtags = (value) => {
-    const inputText = value.trim();
-    if (inputText === '') {
+    const hashtags = getHashtags(value);
+    if (hashtags.length === 0) {
       return true;
     }
-    const hashtags = inputText.split(/\s+/).filter((tag) => tag.length > 0);
+
     if (hashtags.length > MAX_HASHTAGS) {
       return false;
     }
+
     const uniqueTags = new Set();
+
     return hashtags.every((hashtag) => {
       if (
         !hashtag.startsWith('#') ||
         hashtag === '#' ||
         hashtag.length > MAX_SYMBOLS ||
-        !/^#[a-zа-яё0-9-]{1,19}$/i.test(hashtag)
+        !/^#[a-zа-яё0-9]{1,19}$/i.test(hashtag)
       ) {
         return false;
       }
+
       const lower = hashtag.toLowerCase();
       if (uniqueTags.has(lower)) {
         return false;
       }
+
       uniqueTags.add(lower);
       return true;
     });
   };
 
   const getHashtagErrorMessage = (value) => {
-    const inputText = value.trim();
-    if (inputText === '') {
+    const hashtags = getHashtags(value);
+    if (hashtags.length === 0) {
       return '';
     }
-    const hashtags = inputText.split(/\s+/).filter((tag) => tag.length > 0);
+
     if (hashtags.length > MAX_HASHTAGS) {
       return `Нельзя указать больше ${MAX_HASHTAGS} хэш-тегов`;
     }
+
     for (const hashtag of hashtags) {
       if (!hashtag.startsWith('#')) {
         return 'Хэш-тег должен начинаться с символа #';
@@ -91,14 +120,16 @@ function initForm() {
       if (hashtag.length > MAX_SYMBOLS) {
         return `Максимальная длина хэштега ${MAX_SYMBOLS} символов`;
       }
-      if (!/^#[a-zа-яё0-9-]{1,19}$/i.test(hashtag)) {
+      if (!/^#[a-zа-яё0-9]{1,19}$/i.test(hashtag)) {
         return 'Хэштег содержит недопустимые символы';
       }
     }
+
     const lowerTags = hashtags.map((tag) => tag.toLowerCase());
     if (new Set(lowerTags).size !== lowerTags.length) {
       return 'Хэштеги не должны повторяться';
     }
+
     return '';
   };
 
@@ -113,42 +144,64 @@ function initForm() {
     submitButton.disabled = !pristine.validate();
   };
 
-  const openForm = () => {
-    if (!fileInput.files.length) {
+  const onDocumentKeydown = (evt) => {
+    if (!isEscapeKey(evt)) {
       return;
     }
-    loadUserImage();
-    overlay.classList.remove('hidden');
-    document.body.classList.add('modal-open');
-    updateSubmitButton();
+    if (isMessageOpened()) {
+      return;
+    }
+    if (document.activeElement === inputHashtag || document.activeElement === inputComment) {
+      return;
+    }
+    closeForm();
   };
 
-  const closeForm = () => {
+  const showFormOverlay = () => {
+    overlay.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+
+    document.removeEventListener('keydown', onDocumentKeydown);
+    document.addEventListener('keydown', onDocumentKeydown);
+  };
+
+  const hideFormOverlay = () => {
     overlay.classList.add('hidden');
     document.body.classList.remove('modal-open');
+    document.removeEventListener('keydown', onDocumentKeydown);
+  };
+
+  const resetForm = () => {
     formUpload.reset();
     pristine.reset();
     fileInput.value = '';
-    previewImage.src = 'img/upload-default-image.jpg';
+    setPreviewImage('img/upload-default-image.jpg');
     resetImageEditor();
     submitButton.disabled = false;
   };
 
-  const onFormKeydown = (evt) => {
-    if (isEscapeKey(evt) && !overlay.classList.contains('hidden')) {
-      if (document.activeElement !== inputHashtag && document.activeElement !== inputComment) {
-        closeForm();
-      }
+  const openForm = () => {
+    if (!fileInput.files.length) {
+      return;
     }
+
+    loadUserImage();
+    resetImageEditor();
+    showFormOverlay();
+    updateSubmitButton();
   };
+
+  function closeForm() {
+    hideFormOverlay();
+    resetForm();
+  }
 
   fileInput.addEventListener('change', openForm);
   cancelButton.addEventListener('click', closeForm);
-  document.addEventListener('keydown', onFormKeydown);
 
   [inputHashtag, inputComment].forEach((field) => {
     field.addEventListener('keydown', (evt) => {
-      if (evt.key === 'Escape') {
+      if (isEscapeKey(evt) && !overlay.classList.contains('hidden') && !isMessageOpened()) {
         evt.stopPropagation();
       }
     });
@@ -157,10 +210,13 @@ function initForm() {
 
   formUpload.addEventListener('submit', (evt) => {
     evt.preventDefault();
+
     if (!pristine.validate()) {
       return;
     }
+
     submitButton.disabled = true;
+
     sendDataToServer(new FormData(formUpload))
       .then(() => {
         closeForm();
@@ -168,15 +224,12 @@ function initForm() {
       })
       .catch(() => {
         submitButton.disabled = false;
+
+        hideFormOverlay();
+
         showMessage('#error', {
-          onButton: () => {
-            overlay.classList.remove('hidden');
-            document.body.classList.add('modal-open');
-          },
-          onClose: () => {
-            overlay.classList.remove('hidden');
-            document.body.classList.add('modal-open');
-          }
+          onButton: showFormOverlay,
+          onClose: showFormOverlay,
         });
       });
   });

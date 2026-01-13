@@ -4,24 +4,22 @@ const Urls = {
 };
 
 const getDataFromServer = () =>
-  fetch(Urls.GET)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error('Ошибка загрузки данных');
-      }
-      return response.json();
-    });
+  fetch(Urls.GET).then((response) => {
+    if (!response.ok) {
+      throw new Error('Ошибка загрузки данных');
+    }
+    return response.json();
+  });
 
 const sendDataToServer = (body) =>
   fetch(Urls.POST, {
     method: 'POST',
     body,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error('Ошибка отправки формы');
-      }
-      return response.json();
-    });
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error('Ошибка отправки формы');
+    }
+    return response.json();
+  });
 
 export { getDataFromServer, sendDataToServer };

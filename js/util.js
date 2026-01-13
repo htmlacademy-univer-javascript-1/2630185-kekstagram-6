@@ -1,52 +1,68 @@
-function isEscapeKey(evt) {
-  return evt.key === 'Escape';
-}
+const isEscapeKey = (evt) => evt.key === 'Escape';
 
 function showMessage(templateId, { onButton, onClose } = {}) {
-  const template = document.querySelector(templateId).content.cloneNode(true);
-  const message = template.querySelector('section');
-  document.body.append(message);
+  document.querySelectorAll('.success, .error').forEach((el) => el.remove());
 
-  function closeMessage(callback) {
-    message.remove();
-    document.removeEventListener('keydown', onEscKeydown);
-    document.removeEventListener('click', onOutsideClick);
-    if (callback) {
-      callback();
-    }
+  const template = document.querySelector(templateId);
+  if (!template) {
+    return;
   }
 
-  function onEscKeydown(evt) {
+  const message = template.content.querySelector('section').cloneNode(true);
+  document.body.append(message);
+
+  const innerElement =
+    message.querySelector('.success__inner') ||
+    message.querySelector('.error__inner') ||
+    message;
+
+  const closeMessage = (callback) => {
+    message.remove();
+    document.removeEventListener('keydown', onDocumentKeydown);
+    document.removeEventListener('click', onDocumentClick);
+
+    if (typeof callback === 'function') {
+      callback();
+    }
+  };
+
+  function onDocumentKeydown(evt) {
     if (isEscapeKey(evt)) {
       closeMessage(onClose);
     }
   }
 
-  function onOutsideClick(evt) {
-    if (!evt.target.closest(`.${message.className}__inner`)) {
+  function onDocumentClick(evt) {
+    if (!innerElement.contains(evt.target)) {
       closeMessage(onClose);
     }
   }
 
-  message.querySelector('button').addEventListener('click', () => {
-    closeMessage(onButton);
-  });
-  document.addEventListener('keydown', onEscKeydown);
-  document.addEventListener('click', onOutsideClick);
+  const button =
+    message.querySelector('.success__button') ||
+    message.querySelector('.error__button') ||
+    message.querySelector('button');
+
+  if (button) {
+    button.addEventListener('click', () => closeMessage(onButton));
+  }
+
+  document.addEventListener('keydown', onDocumentKeydown);
+  document.addEventListener('click', onDocumentClick);
 }
 
 function debounce(callback, timeoutDelay = 500) {
   let timeoutId;
   return (...rest) => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
+    timeoutId = setTimeout(() => callback(...rest), timeoutDelay);
   };
 }
 
 const shuffleArray = (array) => {
-  for (let indexOne = array.length - 1; indexOne > 0; indexOne--) {
-    const indexTwo = Math.floor(Math.random() * (indexOne + 1));
-    [array[indexOne], array[indexTwo]] = [array[indexTwo], array[indexOne]];
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
 };

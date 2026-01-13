@@ -20,7 +20,7 @@ getDataFromServer()
     error.style.backgroundColor = '#ff4d4d';
     error.style.color = '#fff';
     error.style.textAlign = 'center';
-    error.textContent = 'Не удалось загрузить данные с сервера';
+    error.textContent = 'Ошибка загрузки данных';
     document.body.append(error);
   });
 
